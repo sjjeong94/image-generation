@@ -115,7 +115,12 @@ def train(
         root=data_root, train=True, transform=T_train, download=True)
 
     train_loader = torch.utils.data.DataLoader(
-        dataset=train_dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers, pin_memory=pin_memory)
+        dataset=train_dataset,
+        batch_size=batch_size,
+        shuffle=True,
+        num_workers=num_workers,
+        pin_memory=pin_memory,
+    )
 
     gen = Generator(dim_x, dim_z).to(device)
     dis = Discriminator(dim_x).to(device)
@@ -136,11 +141,11 @@ def train(
         losses_g = 0
 
         for i, (x, y) in enumerate(train_loader):
-            real_img = x.to(device)
-            dis.zero_grad()
+            real_img = x.to(device, non_blocking=True)
+            dis.zero_grad(set_to_none=True)
             real_out = dis(real_img).view(-1)
-            latent_z = torch.randn(real_img.size(0), dim_z, 1, 1)
-            latent_z = latent_z.to(device)
+            latent_z = torch.randn(x.size(0), dim_z, 1, 1)
+            latent_z = latent_z.to(device, non_blocking=True)
             fake_img = gen(latent_z)
             fake_out = dis(fake_img.detach()).view(-1)
 
@@ -148,7 +153,7 @@ def train(
             loss_d.backward()
             optimizer_d.step()
 
-            gen.zero_grad()
+            gen.zero_grad(set_to_none=True)
             fake_out = dis(fake_img).view(-1)
 
             loss_g = g_logistic(fake_out)
