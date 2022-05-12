@@ -76,7 +76,7 @@ def g_logistic(d_logit_fake):
 
 def train(
     data_root='./data',
-    logs_root='./logs',
+    logs_root='./logs/cifar10',
     save_period=1,
     dim_x=128,
     dim_z=100,
@@ -188,7 +188,7 @@ def train(
 
 
 def test(
-    logs_root='./logs',
+    logs_root='./logs/cifar10',
     dim_x=128,
     dim_z=100,
 ):
