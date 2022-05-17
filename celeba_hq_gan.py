@@ -1,6 +1,5 @@
 import os
 import time
-import random
 import logging
 import numpy as np
 import torch
@@ -9,63 +8,7 @@ import torch.nn.functional as F
 import albumentations
 import albumentations.pytorch
 import imageio
-from PIL import Image
-from tqdm import tqdm
-
-
-def get_image_files(root):
-    paths = []
-    for (root, dirs, files) in os.walk(root):
-        for f in files:
-            if f[-3:] in ['jpg', 'png']:
-                path = os.path.join(root, f)
-                paths.append(path)
-    return paths
-
-
-def prepare_data(root, save_path='./data/celeba_hq_32', size=32):
-    paths = get_image_files(root)
-    os.makedirs(save_path, exist_ok=True)
-    for path in tqdm(paths):
-        img = Image.open(path)
-        img = img.resize((size, size), Image.LANCZOS)
-        name = os.path.basename(path)
-        save_file = os.path.join(save_path, name + '.png')
-        img.save(save_file)
-
-
-def set_seed(seed):
-    random.seed(seed)
-    os.environ['PYTHONHASHSEED'] = str(seed)
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-    if torch.cuda.is_available():
-        torch.cuda.manual_seed_all(seed)
-        torch.backends.cudnn.deterministic = True
-
-
-class Dataset(torch.utils.data.Dataset):
-    def __init__(self, root, transform=None):
-        super().__init__()
-        paths = get_image_files(root)
-        data = []
-        for path in tqdm(paths):
-            img = Image.open(path)
-            arr = np.asarray(img)
-            data.append(arr)
-        self.data = data
-        self.transform = transform
-
-    def __len__(self):
-        return len(self.data)
-
-    def __getitem__(self, index):
-        img = self.data[index]
-
-        if self.transform is not None:
-            img = self.transform(image=img)['image']
-
-        return img, 0
+from utils import *
 
 
 def Generator(dim_x, dim_z):
@@ -174,7 +117,7 @@ def train(
         losses_d = 0
         losses_g = 0
 
-        for i, (x, y) in enumerate(train_loader):
+        for i, x in enumerate(train_loader):
             real_img = x.to(device, non_blocking=True)
             dis.zero_grad(set_to_none=True)
             real_out = dis(real_img).view(-1)

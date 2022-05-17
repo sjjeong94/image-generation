@@ -1,6 +1,5 @@
 import os
 import time
-import random
 import logging
 import numpy as np
 import torch
@@ -10,27 +9,18 @@ import torchvision
 import albumentations
 import albumentations.pytorch
 import imageio
-
-
-def set_seed(seed):
-    random.seed(seed)
-    os.environ['PYTHONHASHSEED'] = str(seed)
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-    if torch.cuda.is_available():
-        torch.cuda.manual_seed_all(seed)
-        torch.backends.cudnn.deterministic = True
+from utils import *
 
 
 class CIFAR10(torchvision.datasets.CIFAR10):
     # CIFAR10 Dataset for Albumentations
     def __getitem__(self, index):
-        img, target = self.data[index], self.targets[index]
+        img = self.data[index]
 
         if self.transform is not None:
             img = self.transform(image=img)['image']
 
-        return img, target
+        return img
 
 
 def Generator(dim_x, dim_z):
@@ -87,6 +77,7 @@ def train(
     batch_size=64,
     num_workers=1,
     pin_memory=True,
+    custum_dataset=False,
 ):
     set_seed(1234)
     os.makedirs(logs_root, exist_ok=True)
@@ -111,8 +102,11 @@ def train(
     T_train.append(albumentations.pytorch.ToTensorV2())
     T_train = albumentations.Compose(T_train)
 
-    train_dataset = CIFAR10(
-        root=data_root, train=True, transform=T_train, download=True)
+    if custum_dataset:
+        train_dataset = Dataset(root=data_root, transform=T_train)
+    else:
+        train_dataset = CIFAR10(
+            root=data_root, train=True, transform=T_train, download=True)
 
     train_loader = torch.utils.data.DataLoader(
         dataset=train_dataset,
@@ -140,7 +134,7 @@ def train(
         losses_d = 0
         losses_g = 0
 
-        for i, (x, y) in enumerate(train_loader):
+        for i, x in enumerate(train_loader):
             real_img = x.to(device, non_blocking=True)
             dis.zero_grad(set_to_none=True)
             real_out = dis(real_img).view(-1)
@@ -227,5 +221,13 @@ def test(
 
 
 if __name__ == '__main__':
-    train()
-    test()
+    cifar10 = False
+    if cifar10:
+        train()
+        test()
+    else:
+        data_root = './data/celeba_hq_32'
+        logs_root = './logs/celeba_hq_32'
+        # prepare_data('../data/celeba_hq', data_root, 32)
+        train(data_root=data_root, logs_root=logs_root, custum_dataset=True)
+        test(logs_root=logs_root)
