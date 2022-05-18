@@ -110,7 +110,8 @@ def train(
     dis,
     dim_z,
     save_period=1,
-    learning_rate=1e-3,
+    lr_g=1e-3,
+    lr_d=1e-3,
     beta1=0.5,
     beta2=0.999,
     epochs=50,
@@ -148,9 +149,9 @@ def train(
     dis = dis.to(device).train()
 
     optimizer_g = torch.optim.Adam(
-        gen.parameters(), lr=learning_rate, betas=(beta1, beta2))
+        gen.parameters(), lr=lr_g, betas=(beta1, beta2))
     optimizer_d = torch.optim.Adam(
-        dis.parameters(), lr=learning_rate, betas=(beta1, beta2))
+        dis.parameters(), lr=lr_d, betas=(beta1, beta2))
 
     logger.info('%12s %12s %12s %12s %12s' %
                 ('epoch', 'total_time', 'train_time', 'loss_d', 'loss_g'))
